@@ -4,6 +4,8 @@ import sys
 import time
 from MAXV_5M40ZE64 import DR_LENGTH
 
+BAUDRATE = 1000000 # All UART communication in this project uses 1[Mbps]
+
 H=1
 L=0
 
@@ -75,7 +77,7 @@ if __name__ == "__main__":
 
     com_num = sys.argv[1]
 
-    with serial.Serial(com_num, 1000000, timeout=0.1) as ser:
+    with serial.Serial(com_num, BAUDRATE, timeout=0.1) as ser:
         idcode = get_idcode(ser) 
 
     print(f"IDCODE:           0x{idcode.raw:08X}")

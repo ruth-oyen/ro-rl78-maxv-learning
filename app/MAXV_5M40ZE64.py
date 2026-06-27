@@ -14,12 +14,14 @@ IR_LENGTH = 10
 
 OPCODE = {
     "SAMPLE": "0000000101",
+    "EXTEST": "0000001111",
     "IDCODE": "0000000110", # Not used here because IDCODE is selected by default after Test-Logic-Reset.
     "BYPASS": "1111111111", # Not used here because this board has only one JTAG device.
 }
 
 DR_LENGTH = {
     "SAMPLE": 240,
+    "EXTEST": 240,
     "IDCODE": 32,
     "BYPASS": 1, # Not used here.
 }
