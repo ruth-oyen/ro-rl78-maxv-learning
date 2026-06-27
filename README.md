@@ -64,8 +64,8 @@ Three applications will be provided for PCJ, and one for MCJ. All of them are wr
 
 #### APP for PCJ
 - [pcj_get_idcode.py](app/pcj_get_idcode.py) : reads the IDCODE of the CPLD
-- pcj_get_pins.py   : gets the pin states of the CPLD
-- pcj_set_pins.py   : sets the pin states of the CPLD
+- [pcj_get_pin.py](app/pcj_get_pin.py)       : gets the pin states of the CPLD
+- pcj_set_pin.py                             : sets the pin states of the CPLD
 
 #### APP for MCJ
 - mcj_write_cpld.py : writes the configuration data into the CPLD
@@ -77,7 +77,7 @@ External datasheets and manuals for the parts used on this board.
 
 ### CPLD
 [MAX V Device Handbook](https://docs.altera.com/v/u/docs/654928/max-v-device-handbook)
-
+[5M40ZE64 BSDL File (5M40ZE64.bsd)](https://docs.altera.com/v/u/resources/651571/max-v-ieee-1149.1-compliant-bsdl-model-for-5m40ze64-64-pin-eqfp)
 ### MCU
 [RL78/G12 Datasheet](https://www.renesas.com/en/document/dst/rl78g12-datasheet-0?srsltid=AfmBOorB3Il6-O8VI_aK6pjBkjMe29EAkK5h5Y84IsoA7L9LItQJMVmQ)
 

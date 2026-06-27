@@ -2,9 +2,11 @@ import serial
 import ctypes
 import sys
 import time
+from MAXV_5M40ZE64 import DR_LENGTH
 
 H=1
 L=0
+
 
 class XxD_STRUCT(ctypes.LittleEndianStructure):
     """Bit layout of one UART byte: TMS/TCK/TDI out, TDO in."""
@@ -16,6 +18,7 @@ class XxD_STRUCT(ctypes.LittleEndianStructure):
         ("dummy",   ctypes.c_uint8, 4),
     ]
 
+
 class IDCODE_STRUCT(ctypes.LittleEndianStructure):
     """IDCODE bit fields (IEEE 1149.1 / MAX V layout)."""
     _fields_ = [
@@ -25,13 +28,16 @@ class IDCODE_STRUCT(ctypes.LittleEndianStructure):
         ("version",        ctypes.c_uint32,  4),
     ]
 
+
 class XxD(ctypes.Union):
     """Union: access the UART byte as bit fields or as raw uint8."""
     _fields_ = [("bits", XxD_STRUCT), ("raw", ctypes.c_uint8)]
 
+
 class IDCODE(ctypes.Union):
     """Union: access IDCODE as bit fields or as raw uint32."""
     _fields_ = [("bits", IDCODE_STRUCT), ("raw", ctypes.c_uint32)]
+
 
 def jtag(ser, tms, tdi):
     """TCK cycle: shift one bit in/out. Returns the TDO bit."""
@@ -39,36 +45,37 @@ def jtag(ser, tms, tdi):
     rxd = XxD()
     txd.bits.tms_out = tms
     txd.bits.tdi_out = tdi
-    txd.bits.tck_out = H
-    ser.write(bytes(txd))
-    rxd.raw=bytes(ser.read(1))[0]
-    time.sleep(0.1)
-    tdo = rxd.bits.tdo_in
     txd.bits.tck_out = L
     ser.write(bytes(txd))
     rxd.raw=bytes(ser.read(1))[0]
-    time.sleep(0.1)
-    return tdo
+    txd.bits.tck_out = H
+    ser.write(bytes(txd))
+    rxd.raw=bytes(ser.read(1))[0]
+    return rxd.bits.tdo_in
+
 
 def get_idcode(ser):
     for _ in range(5):
-        jtag(ser, H, L)                                # to Test-Lgic-Reset
-    jtag(ser, L, L)                                    # to Run-Test/Idle
-    jtag(ser, H, L)                                    # to Select-DR-Scan
-    jtag(ser, L, L)                                    # to Capture-DR
-    jtag(ser, L, L)                                    # to Shift-DR
-    idcode_bits = [jtag(ser, L, L) for _ in range(31)] # Shift-DR (1 bit left)
-    idcode_bits.append(jtag(ser, H, L))                # to Exit1 (last 1 bit)
-    jtag(ser, H, L)                                    # to Update-DR
-    jtag(ser, L, L)                                    # to Run-Test/Idle
-    return IDCODE(raw=sum( idcode_bits[n] << n for n in range(32)))
+        jtag(ser, H, L)                                                   # to Test-Logic-Reset
+    jtag(ser, L, L)                                                       # to Run-Test/Idle
+    jtag(ser, H, L)                                                       # to Select-DR-Scan
+    jtag(ser, L, L)                                                       # to Capture-DR
+    jtag(ser, L, L)                                                       # to Shift-DR
+    idcode_bits = [jtag(ser, L, L) for _ in range(DR_LENGTH["IDCODE"]-1)] # Shift-DR (1 bit left)
+    idcode_bits.append(jtag(ser, H, L))                                   # to Exit1 (last 1 bit)
+    jtag(ser, H, L)                                                       # to Update-DR
+    jtag(ser, L, L)                                                       # to Run-Test/Idle
+    return IDCODE(raw=sum( idcode_bits[n] << n for n in range(DR_LENGTH["IDCODE"])))
+
 
 if __name__ == "__main__":
     if(len(sys.argv)!=2):
-       print(f"Usage: {sys.argv[0]} <COMn or /dev/tty*>");
-       sys.exit(2) #os.EX_USAGE
+        print(f"Usage: {sys.argv[0]} <COMn or /dev/tty*>");
+        sys.exit(2) #os.EX_USAGE
 
-    with serial.Serial(sys.argv[1], 1000000, timeout=0.1) as ser:
+    com_num = sys.argv[1]
+
+    with serial.Serial(com_num, 1000000, timeout=0.1) as ser:
         idcode = get_idcode(ser) 
 
     print(f"IDCODE:           0x{idcode.raw:08X}")
@@ -76,3 +83,5 @@ if __name__ == "__main__":
     print(f"Manufacture ID:   0x{idcode.bits.manufacture_id:04X}")
     print(f"Part Number:      0x{idcode.bits.part_number:04X}")
     print(f"Version:          0x{idcode.bits.version:02X}")
+
+    print(idcode.raw)

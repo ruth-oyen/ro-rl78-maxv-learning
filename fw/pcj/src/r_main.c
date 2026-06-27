@@ -23,7 +23,7 @@
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
 * Description  : This file implements main function.
-* Creation Date: 18/06/2026
+* Creation Date: 24/06/2026
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -54,7 +54,6 @@ uint8_t rx_buf[RX_BUF_SIZE];
 uint8_t tx_buf[RX_BUF_SIZE];
 enum ERR err = ERR_NONE;
 /* End user code. Do not edit comment generated here */
-
 void R_MAIN_UserInit(void);
 
 /***********************************************************************************************************************
@@ -85,7 +84,7 @@ void R_MAIN_UserInit(void)
     /* Start user code. Do not edit comment generated here */
 	R_UART0_Start();
 	R_UART0_Receive(rx_buf, sizeof(rx_buf));
-	R_TAU0_Channel0_Start(); R_TAU0_Channel1_Start();
+	R_TAU0_Channel0_Start();
     EI();
     /* End user code. Do not edit comment generated here */
 }
@@ -95,8 +94,9 @@ void uart0_callback_receiveend(void)
 {
 	static uint8_t pre_tck_out;
 	pre_tck_out = TCK_OUT;
-	tx_buf[0] = P2;
 	P2 = rx_buf[0];
+	NOP();
+	tx_buf[0] = P2;
 	R_UART0_Send(tx_buf, sizeof(tx_buf));
 	if((pre_tck_out == L) && (TCK_OUT == H))
 	{
@@ -112,12 +112,12 @@ void uart0_callback_sendend(void)
 void timer_1ms(void)
 {
 	static uint16_t cnt;
-	//EI();
-	//if(err != ERR_NONE)
-	//{
-	//	P1 = cnt & 1 ? err : 0;
-	//}
-	++P1;
+	EI();
+	if(err != ERR_NONE)
+	{
+		P1 = cnt & 1 ? err : 0;
+	}
+	//++P1;
 	cnt++;
 }
 
