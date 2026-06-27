@@ -2,7 +2,7 @@
 A learning board for JTAG and digital circuits, featuring a Raspberry Pi-compatible 40-pin GPIO header, with firmware and host software included.
 
 ![RO-RL78-MAXV-LEARNING PCB](img/ro-rl78-maxv-learning-pcb-brd_Rev_A.png)
-**Note**: The Rev. A PCB arrived, and of course it had a bug 😇 See [Rev.B(in progress)](#schematic) of the schematic.
+**Note**: The Rev. A PCB arrived, and of course it had a bug 😇 See the [Rev.B schematic (in progress)](#schematic).
 
 ---
 
@@ -24,7 +24,8 @@ The whole board runs from a single USB-C cable. LDO1 makes 3.3 V for the I/O, LD
 ---
 
 ## TAP Controller
-The TAP Controller is a 16-state machine defined by IEEE 1149.1 that sequences all JTAG operations. The LEDs silkscreened "TAP State Machine" on the board show these 16 states in real time, so you can watch the controller move through them as you drive JTAG from the PC or the MCU.
+The TAP Controller is a 16-state machine defined by IEEE 1149.1 that sequences all JTAG operations. The 16 LEDs under the "TAP State Machine" label on the board indicate the current TAP state in real time, so you can watch the controller move from state to state as either the PC or the MCU drives JTAG.
+
 ![TAP State Machine](img/TAP_State_Machine.png)
 
 ---
@@ -38,37 +39,43 @@ Documents written for this project and included in the repository.
 ### RO-RL78-MAXV-LEARNING-PCB
 
 #### BOM
-[Rev.A](pcb/bom/ro-rl78-maxv-learning-pcb-bom_Rev_A.pdf)
+[Rev.A BOM](pcb/bom/ro-rl78-maxv-learning-pcb-bom_Rev_A.pdf)
 
 #### Schematic
-[Rev.A](pcb/schematic/ro-rl78-maxv-learning-pcb-sch_Rev_A.pdf)
-[Rev.B(in progress)](pcb/schematic/ro-rl78-maxv-learning-pcb-sch_Rev_B.pdf)
+[Rev.A schematic](pcb/schematic/ro-rl78-maxv-learning-pcb-sch_Rev_A.pdf)
+[Rev.B schematic (in progress)](pcb/schematic/ro-rl78-maxv-learning-pcb-sch_Rev_B.pdf)
 
 #### Board
-[Rev.A](pcb/board/ro-rl78-maxv-learning-pcb-brd_Rev_A.pdf)
+[Rev.A board image](pcb/board/ro-rl78-maxv-learning-pcb-brd_Rev_A.pdf)
 
 ---
 
 ### RO-RL78-MAXV-LEARNING-FW
 There are two types of firmware for the MCU (RL78) in this project:
-(The linked file is available for now)
-- [PCJ (RO_RL78_MAXV_LEARNING_FW_PCJ.zip)](fw/RO_RL78_MAXV_LEARNING_FW_PCJ.zip) = PC-controlled JTAG (PC controls TCK)
-- MCJ (RO_RL78_MAXV_LEARNING_FW_MCJ.zip) = MCU-controlled JTAG (MCU controls TCK)
+- fw/pcj/ (done)       : PC-controlled JTAG (PC controls TCK)
+- fw/mcj/ (in progress): MCU-controlled JTAG (MCU controls TCK)
 
-PCJ is for understanding JTAG itself. The PC drives every TCK edge by hand.  MCJ is for learning digital circuits. The RL78 writes to the CPLD as a JTAG master.  The firmware is built with e2studio. If you want to modify it, you need to install e2studio first.
+PCJ is for understanding JTAG itself. The PC drives every TCK edge by hand.
+MCJ is for learning digital circuits. The RL78 writes to the CPLD as a JTAG master.
+Both firmware variants are built with e2studio. If you want to modify them, you need to install e2studio first.
 
 ---
 
 ### RO-RL78-MAXV-LEARNING-APP
-Three applications will be provided for PCJ, and one for MCJ. All of them are written in Python. Files that are linked are ready; the others are not yet available.
+Four applications are currently available for PCJ, and five are planned for MCJ. All are written in Python. Applications with links are ready to use; the others are still in development.
 
 #### APP for PCJ
-- [pcj_get_idcode.py](app/pcj_get_idcode.py) : reads the IDCODE of the CPLD
-- [pcj_get_pin.py](app/pcj_get_pin.py)       : gets the pin states of the CPLD
-- pcj_set_pin.py                             : sets the pin states of the CPLD
+- [app/pcj/get_idcode.py](app/pcj/get_idcode.py) : reads the IDCODE of the CPLD using the PCJ firmware
+- [app/pcj/get_pin.py](app/pcj/get_pin.py)       : gets the pin states of the CPLD using the PCJ firmware
+- [app/pcj/set_pin.py](app/pcj/set_pin.py)       : sets the pin states of the CPLD using the PCJ firmware
+- [app/pcj/blink_pin.py](app/pcj/blink_pin.py)   : repeatedly toggles a CPLD pin using the PCJ firmware
 
 #### APP for MCJ
-- mcj_write_cpld.py : writes the configuration data into the CPLD
+- app/mcj/get_idcode.py : reads the IDCODE of the CPLD using the MCJ firmware
+- app/mcj/get_pin.py    : gets the pin states of the CPLD using the MCJ firmware
+- app/mcj/set_pin.py    : sets the pin states of the CPLD using the MCJ firmware
+- app/mcj/blink_pin.py  : blinks the pin state of the CPLD using the MCJ firmware
+- app/mcj/write_cpld.py : writes the configuration data into the CPLD using the MCJ firmware
 
 ---
 
