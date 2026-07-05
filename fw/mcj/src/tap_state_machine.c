@@ -31,7 +31,7 @@ uint8_t update_tap_state_machine(_Bool tms)
         case EXIT1_IR:         tsm = tms ? UPDATE_IR        : PAUSE_IR; break;
         case PAUSE_IR:         tsm = tms ? EXIT2_IR         : PAUSE_IR; break;
         case EXIT2_IR:         tsm = tms ? UPDATE_IR        : SHIFT_IR; break;
-        case UPDATE_IR:        tsm = tms ? SELECT_IR_SCAN   : RUN_TEST_IDLE; break;
+        case UPDATE_IR:        tsm = tms ? SELECT_DR_SCAN   : RUN_TEST_IDLE; break;
     }
 
     return tsm;

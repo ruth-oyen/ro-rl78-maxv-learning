@@ -34,6 +34,7 @@ User definitions
 ***********************************************************************************************************************/
 
 /* Start user code for function. Do not edit comment generated here */
+#define VERSION (0x00000100U)
 #define L 0
 #define H 1
 

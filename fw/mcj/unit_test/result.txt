@@ -1,0 +1,35 @@
+000(OK): 00, 00, 00, from=TEST_LOGIC_RESET, to=TEST_LOGIC_RESET, result=TEST_LOGIC_RESET
+001(OK): 00, 01, 01, from=TEST_LOGIC_RESET, to=RUN_TEST_IDLE   , result=RUN_TEST_IDLE   
+002(OK): 00, 02, 02, from=TEST_LOGIC_RESET, to=SELECT_DR_SCAN  , result=SELECT_DR_SCAN  
+003(OK): 00, 03, 03, from=TEST_LOGIC_RESET, to=CAPTURE_DR      , result=CAPTURE_DR      
+004(OK): 00, 04, 04, from=TEST_LOGIC_RESET, to=SHIFT_DR        , result=SHIFT_DR        
+005(OK): 00, 05, 05, from=TEST_LOGIC_RESET, to=EXIT1_DR        , result=EXIT1_DR        
+006(OK): 00, 06, 06, from=TEST_LOGIC_RESET, to=PAUSE_DR        , result=PAUSE_DR        
+007(OK): 00, 07, 07, from=TEST_LOGIC_RESET, to=EXIT2_DR        , result=EXIT2_DR        
+008(OK): 00, 08, 08, from=TEST_LOGIC_RESET, to=UPDATE_DR       , result=UPDATE_DR       
+009(OK): 00, 09, 09, from=TEST_LOGIC_RESET, to=SELECT_IR_SCAN  , result=SELECT_IR_SCAN  
+010(OK): 00, 10, 10, from=TEST_LOGIC_RESET, to=CAPTURE_IR      , result=CAPTURE_IR      
+011(OK): 00, 11, 11, from=TEST_LOGIC_RESET, to=SHIFT_IR        , result=SHIFT_IR        
+012(OK): 00, 12, 12, from=TEST_LOGIC_RESET, to=EXIT1_IR        , result=EXIT1_IR        
+013(OK): 00, 13, 13, from=TEST_LOGIC_RESET, to=PAUSE_IR        , result=PAUSE_IR        
+(中略)
+239(OK): 14, 15, 15, from=EXIT2_IR        , to=UPDATE_IR       , result=UPDATE_IR       
+240(OK): 15, 00, 00, from=UPDATE_IR       , to=TEST_LOGIC_RESET, result=TEST_LOGIC_RESET
+241(OK): 15, 01, 01, from=UPDATE_IR       , to=RUN_TEST_IDLE   , result=RUN_TEST_IDLE   
+242(OK): 15, 02, 02, from=UPDATE_IR       , to=SELECT_DR_SCAN  , result=SELECT_DR_SCAN  
+243(OK): 15, 03, 03, from=UPDATE_IR       , to=CAPTURE_DR      , result=CAPTURE_DR      
+244(OK): 15, 04, 04, from=UPDATE_IR       , to=SHIFT_DR        , result=SHIFT_DR        
+245(OK): 15, 05, 05, from=UPDATE_IR       , to=EXIT1_DR        , result=EXIT1_DR        
+246(OK): 15, 06, 06, from=UPDATE_IR       , to=PAUSE_DR        , result=PAUSE_DR        
+247(OK): 15, 07, 07, from=UPDATE_IR       , to=EXIT2_DR        , result=EXIT2_DR        
+248(OK): 15, 08, 08, from=UPDATE_IR       , to=UPDATE_DR       , result=UPDATE_DR       
+249(OK): 15, 09, 09, from=UPDATE_IR       , to=SELECT_IR_SCAN  , result=SELECT_IR_SCAN  
+250(OK): 15, 10, 10, from=UPDATE_IR       , to=CAPTURE_IR      , result=CAPTURE_IR      
+251(OK): 15, 11, 11, from=UPDATE_IR       , to=SHIFT_IR        , result=SHIFT_IR        
+252(OK): 15, 12, 12, from=UPDATE_IR       , to=EXIT1_IR        , result=EXIT1_IR        
+253(OK): 15, 13, 13, from=UPDATE_IR       , to=PAUSE_IR        , result=PAUSE_IR        
+254(OK): 15, 14, 14, from=UPDATE_IR       , to=EXIT2_IR        , result=EXIT2_IR        
+255(OK): 15, 15, 15, from=UPDATE_IR       , to=UPDATE_IR       , result=UPDATE_IR       
+Test Count  = 256
+Passed Count = 256
+Error Count = 0
