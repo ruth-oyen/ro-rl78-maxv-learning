@@ -23,7 +23,7 @@
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
 * Description  : This file implements device driver for TAU module.
-* Creation Date: 30/06/2026
+* Creation Date: 05/07/2026
 ***********************************************************************************************************************/
 
 #ifndef TAU_H
@@ -295,13 +295,13 @@ Macro definitions (Register bit)
 Macro definitions
 ***********************************************************************************************************************/
 /* 16-bit timer data register 00 (TDR00) */
-#define _5DBF_TAU_TDR00_VALUE                   (0x5DBFU)
+#define _EA5F_TAU_TDR00_VALUE                   (0xEA5FU)
 /* Clock divisor for TAU0 channel 0 */
-#define _0001_TAU0_CHANNEL0_DIVISOR             (0x0001U)
-/* 16-bit timer data register 01 (TDR01) */
-#define _0005_TAU_TDR01_VALUE                   (0x0005U)
-/* Clock divisor for TAU0 channel 1 */
-#define _0001_TAU0_CHANNEL1_DIVISOR             (0x0001U)
+#define _0004_TAU0_CHANNEL0_DIVISOR             (0x0004U)
+/* 16-bit timer data register 02 (TDR02) */
+#define _0017_TAU_TDR02_VALUE                   (0x0017U)
+/* Clock divisor for TAU0 channel 2 */
+#define _0001_TAU0_CHANNEL2_DIVISOR             (0x0001U)
 
 /***********************************************************************************************************************
 Typedef definitions
@@ -313,8 +313,8 @@ Global functions
 void R_TAU0_Create(void);
 void R_TAU0_Channel0_Start(void);
 void R_TAU0_Channel0_Stop(void);
-void R_TAU0_Channel1_Start(void);
-void R_TAU0_Channel1_Stop(void);
+void R_TAU0_Channel2_Start(void);
+void R_TAU0_Channel2_Stop(void);
 
 /* Start user code for function. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */

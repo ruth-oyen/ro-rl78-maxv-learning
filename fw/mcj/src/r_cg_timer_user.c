@@ -23,7 +23,7 @@
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
 * Description  : This file implements device driver for TAU module.
-* Creation Date: 30/06/2026
+* Creation Date: 05/07/2026
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -39,7 +39,6 @@ Includes
 Pragma directive
 ***********************************************************************************************************************/
 #pragma interrupt r_tau0_channel0_interrupt(vect=INTTM00)
-#pragma interrupt r_tau0_channel1_interrupt(vect=INTTM01)
 /* Start user code for pragma. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
 
@@ -58,19 +57,7 @@ Global variables and functions
 static void __near r_tau0_channel0_interrupt(void)
 {
     /* Start user code. Do not edit comment generated here */
-	timer_1ms();
-    /* End user code. Do not edit comment generated here */
-}
-
-/***********************************************************************************************************************
-* Function Name: r_tau0_channel1_interrupt
-* Description  : This function is INTTM01 interrupt service routine.
-* Arguments    : None
-* Return Value : None
-***********************************************************************************************************************/
-static void __near r_tau0_channel1_interrupt(void)
-{
-    /* Start user code. Do not edit comment generated here */
+	timer_10ms();
     /* End user code. Do not edit comment generated here */
 }
 

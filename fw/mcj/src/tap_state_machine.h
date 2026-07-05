@@ -30,6 +30,8 @@ enum TSM
     PAUSE_IR,
     EXIT2_IR,
     UPDATE_IR,
+
+    TAP_STATE_COUNT,
 };
 
 #endif /* TAP_STATE_MACHINE_H_ */

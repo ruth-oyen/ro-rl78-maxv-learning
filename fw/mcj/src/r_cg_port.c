@@ -23,7 +23,7 @@
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
 * Description  : This file implements device driver for PORT module.
-* Creation Date: 30/06/2026
+* Creation Date: 05/07/2026
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -55,14 +55,17 @@ Global variables and functions
 ***********************************************************************************************************************/
 void R_PORT_Create(void)
 {
-    P1 = _00_Pn0_OUTPUT_0 | _00_Pn1_OUTPUT_0 | _00_Pn2_OUTPUT_0 | _00_Pn3_OUTPUT_0;
+    P1 = _00_Pn0_OUTPUT_0 | _00_Pn1_OUTPUT_0 | _00_Pn2_OUTPUT_0 | _00_Pn3_OUTPUT_0 | _10_Pn4_OUTPUT_1;
     P2 = _00_Pn0_OUTPUT_0 | _00_Pn1_OUTPUT_0 | _00_Pn2_OUTPUT_0;
-    PU4 = _00_PUn0_PULLUP_OFF | _02_PUn1_PULLUP_ON | _04_PUn2_PULLUP_ON;
+    P4 = _00_Pn1_OUTPUT_0;
+    PU4 = _00_PUn0_PULLUP_OFF | _04_PUn2_PULLUP_ON;
     PMC1 = _00_PMCn0_DI_ON | _00_PMCn1_DI_ON | _00_PMCn2_DI_ON | _00_PMCn3_DI_ON | _00_PMCn4_DI_ON | _E0_PMC1_DEFAULT;
+    PMC4 = _00_PMCn1_DI_ON | _04_PMCn2_NOT_USE | _F9_PMC4_DEFAULT;
     ADPC = _01_ADPC_DI_ON;
     PM1 = _00_PMn0_MODE_OUTPUT | _00_PMn1_MODE_OUTPUT | _00_PMn2_MODE_OUTPUT | _00_PMn3_MODE_OUTPUT |
-          _10_PMn4_MODE_INPUT | _E0_PM1_DEFAULT;
+          _00_PMn4_MODE_OUTPUT | _E0_PM1_DEFAULT;
     PM2 = _00_PMn0_MODE_OUTPUT | _00_PMn1_MODE_OUTPUT | _00_PMn2_MODE_OUTPUT | _08_PMn3_MODE_INPUT | _F0_PM2_DEFAULT;
+    PM4 = _01_PMn0_NOT_USE | _00_PMn1_MODE_OUTPUT | _04_PMn2_NOT_USE | _F8_PM4_DEFAULT;
 }
 
 /* Start user code for adding. Do not edit comment generated here */
