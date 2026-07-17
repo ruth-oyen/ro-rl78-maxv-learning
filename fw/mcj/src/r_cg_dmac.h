@@ -18,48 +18,73 @@
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
-* File Name    : r_cg_timer_user.c
+* File Name    : r_cg_dmac.h
 * Version      : CodeGenerator for RL78/G12 V2.04.10.01 [13 Aug 2025]
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
-* Description  : This file implements device driver for TAU module.
-* Creation Date: 28/06/2026
+* Description  : This file implements device driver for DMAC module.
+* Creation Date: 07/07/2026
+***********************************************************************************************************************/
+
+#ifndef DMAC_H
+#define DMAC_H
+
+/***********************************************************************************************************************
+Macro definitions (Register bit)
+***********************************************************************************************************************/
+/*
+    DMA Mode Control Register n (DMCn)
+*/
+/* Setting of DMA transfer start software trigger (STGn) */
+#define _00_DMA_TRIGGER_OPERATION_NO        (0x00U) /* no trigger operation */
+#define _80_DMA_TRIGGER_OPERATION_SOFTWARE  (0x80U) /* DMA transfer is started when DMA operation is enabled */
+/* Selection of DMA transfer direction (DRSn) */
+#define _00_DMA_TRANSFER_DIR_SFR2RAM        (0x00U) /* SFR to internal RAM  */
+#define _40_DMA_TRANSFER_DIR_RAM2SFR        (0x40U) /* internal RAM to SFR */
+/* Specification of transfer data size for DMA transfer (DSn) */
+#define _00_DMA_DATA_SIZE_8                 (0x00U) /* 8 bits */
+#define _20_DMA_DATA_SIZE_16                (0x20U) /* 16 bits */
+/* Pending of DMA transfer(DWAITn) */
+#define _00_DMA_PENDING_NOTHELD             (0x00U) /* executes DMA transfer upon DMA start request */
+#define _10_DMA_PENDING_HOLDS               (0x10U) /* hold DMA start request pending if any */
+/* Selection of DMA stat source (IFCn3 - IFCn0) */
+#define _00_DMA_TRIGGER_SOFTWARE            (0x00U) /* disable DMA transfer by interrupt */
+#define _01_DMA_TRIGGER_AD                  (0x01U) /* A/D conversion end interrupt */
+#define _02_DMA_TRIGGER_TM00                (0x02U) /* timer channel 0 interrupt */
+#define _03_DMA_TRIGGER_TM01                (0x03U) /* timer channel 1 interrupt */
+#define _04_DMA_TRIGGER_TM02                (0x04U) /* timer channel 2 interrupt */
+#define _05_DMA_TRIGGER_TM03                (0x05U) /* timer channel 3 interrupt */
+#define _06_DMA_TRIGGER_ST0_CSI00           (0x06U) /* UART0 transmission end / CSI00 transfer end */
+#define _07_DMA_TRIGGER_SR0_CSI01           (0x07U) /* UART0 reception end / CSI01 transfer end */
+
+/*
+    DMA operation control register n (DRCn)
+*/
+/* DMA operation enable flag (DENn) */
+#define _80_DMA_OPERATION_ENABLE            (0x80U) /* enable operation of DMA */
+#define _00_DMA_OPERATION_DISABLE           (0x00U) /* disable operation of DMA */ 
+/* DMA transfer mode flag (DSTn) */
+#define _01_DMA_TRANSFER_UNDEREXEC          (0x01U) /* DMA transfer is not completed */ 
+#define _00_DMA_TRANSFER_COMPLETED          (0x00U) /* DMA transfer is completed */
+
+/***********************************************************************************************************************
+Macro definitions
+***********************************************************************************************************************/
+#define _02_DMA0_SFR_ADDRESS                (0x02U)
+#define _FD4C_DMA0_RAM_ADDRESS              (0xFD4CU)
+#define _0064_DMA0_BYTE_COUNT               (0x0064U)
+
+/***********************************************************************************************************************
+Typedef definitions
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
-Includes
+Global functions
 ***********************************************************************************************************************/
-#include "r_cg_macrodriver.h"
-#include "r_cg_timer.h"
-/* Start user code for include. Do not edit comment generated here */
-/* End user code. Do not edit comment generated here */
-#include "r_cg_userdefine.h"
+void R_DMAC0_Create(void);
+void R_DMAC0_Start(void);
+void R_DMAC0_Stop(void);
 
-/***********************************************************************************************************************
-Pragma directive
-***********************************************************************************************************************/
-#pragma interrupt r_tau0_channel0_interrupt(vect=INTTM00)
-/* Start user code for pragma. Do not edit comment generated here */
+/* Start user code for function. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
-
-/***********************************************************************************************************************
-Global variables and functions
-***********************************************************************************************************************/
-/* Start user code for global. Do not edit comment generated here */
-/* End user code. Do not edit comment generated here */
-
-/***********************************************************************************************************************
-* Function Name: r_tau0_channel0_interrupt
-* Description  : This function is INTTM00 interrupt service routine.
-* Arguments    : None
-* Return Value : None
-***********************************************************************************************************************/
-static void __near r_tau0_channel0_interrupt(void)
-{
-    /* Start user code. Do not edit comment generated here */
-	timer_1ms();
-    /* End user code. Do not edit comment generated here */
-}
-
-/* Start user code for adding. Do not edit comment generated here */
-/* End user code. Do not edit comment generated here */
+#endif

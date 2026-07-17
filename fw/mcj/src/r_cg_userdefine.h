@@ -23,7 +23,7 @@
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
 * Description  : This file includes user definition.
-* Creation Date: 05/07/2026
+* Creation Date: 07/07/2026
 ***********************************************************************************************************************/
 
 #ifndef _USER_DEF_H
@@ -46,10 +46,10 @@ extern void timer_10ms(void);
 #define CMD_CTRL_GET_STATUS	    (0x03U)
 #define CMD_CTRL_GET_CRC16	    (0x04U)
 #define CMD_CTRL_GET_FLOW	    (0x05U)
-#define CMD_CTRL_SET_TEST	    (0x08U)
-#define CMD_CTRL_SET_STATUS	    (0x0BU)
-#define CMD_CTRL_SET_CRC16	    (0x0CU)
-#define CMD_CTRL_SET_FLOW	    (0x0DU)
+#define CMD_CTRL_SET_TEST	    (0x11U)
+#define CMD_CTRL_SET_STATUS	    (0x13U)
+#define CMD_CTRL_SET_CRC16	    (0x14U)
+#define CMD_CTRL_SET_FLOW	    (0x15U)
 
 #define CMD_JTAG_FREQUENCY		(0x80U)
 #define CMD_JTAG_TRST		    (0x81U)
@@ -61,6 +61,40 @@ extern void timer_10ms(void);
 #define CMD_JTAG_SIR		    (0x87U)
 
 #define CMD_IS_JTAG             (0x80U)
+
+#define TSM_OUT                 (P2_bit.no0)
+#define TCK_OUT                 (P2_bit.no1)
+#define TDI_OUT                 (P2_bit.no2)
+#define TDO_IN                  (P2_bit.no3)
+
+#define USE_DMA
+
+typedef struct
+{
+	uint8_t b0;
+	uint8_t b1;
+	uint8_t b2;
+	uint8_t b3;
+} BYTES;
+
+typedef struct
+{
+	uint16_t w0;
+	uint16_t w1;
+} WORDS;
+
+typedef union
+{
+	uint32_t dword;
+	WORDS	words;
+	BYTES	bytes;
+} DATA_EXCHANGE;
+
+typedef struct
+{
+    uint8_t length; /* Number of P2 bytes in the path. */
+    uint8_t start;  /* First P2 byte in tms_pattern. */
+} TAP_PATH;
 
 /* End user code. Do not edit comment generated here */
 #endif

@@ -18,19 +18,19 @@
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
-* File Name    : r_cg_timer_user.c
+* File Name    : r_cg_dmac_user.c
 * Version      : CodeGenerator for RL78/G12 V2.04.10.01 [13 Aug 2025]
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
-* Description  : This file implements device driver for TAU module.
-* Creation Date: 28/06/2026
+* Description  : This file implements device driver for DMAC module.
+* Creation Date: 07/07/2026
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
 Includes
 ***********************************************************************************************************************/
 #include "r_cg_macrodriver.h"
-#include "r_cg_timer.h"
+#include "r_cg_dmac.h"
 /* Start user code for include. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
@@ -38,7 +38,6 @@ Includes
 /***********************************************************************************************************************
 Pragma directive
 ***********************************************************************************************************************/
-#pragma interrupt r_tau0_channel0_interrupt(vect=INTTM00)
 /* Start user code for pragma. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
 
@@ -47,19 +46,6 @@ Global variables and functions
 ***********************************************************************************************************************/
 /* Start user code for global. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
-
-/***********************************************************************************************************************
-* Function Name: r_tau0_channel0_interrupt
-* Description  : This function is INTTM00 interrupt service routine.
-* Arguments    : None
-* Return Value : None
-***********************************************************************************************************************/
-static void __near r_tau0_channel0_interrupt(void)
-{
-    /* Start user code. Do not edit comment generated here */
-	timer_1ms();
-    /* End user code. Do not edit comment generated here */
-}
 
 /* Start user code for adding. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */

@@ -18,19 +18,19 @@
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
-* File Name    : r_cg_timer_user.c
+* File Name    : r_cg_dmac.c
 * Version      : CodeGenerator for RL78/G12 V2.04.10.01 [13 Aug 2025]
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
-* Description  : This file implements device driver for TAU module.
-* Creation Date: 28/06/2026
+* Description  : This file implements device driver for DMAC module.
+* Creation Date: 07/07/2026
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
 Includes
 ***********************************************************************************************************************/
 #include "r_cg_macrodriver.h"
-#include "r_cg_timer.h"
+#include "r_cg_dmac.h"
 /* Start user code for include. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
 #include "r_cg_userdefine.h"
@@ -38,7 +38,6 @@ Includes
 /***********************************************************************************************************************
 Pragma directive
 ***********************************************************************************************************************/
-#pragma interrupt r_tau0_channel0_interrupt(vect=INTTM00)
 /* Start user code for pragma. Do not edit comment generated here */
 /* End user code. Do not edit comment generated here */
 
@@ -49,16 +48,53 @@ Global variables and functions
 /* End user code. Do not edit comment generated here */
 
 /***********************************************************************************************************************
-* Function Name: r_tau0_channel0_interrupt
-* Description  : This function is INTTM00 interrupt service routine.
+* Function Name: R_DMAC0_Create
+* Description  : This function initializes the DMA0 transfer.
 * Arguments    : None
 * Return Value : None
 ***********************************************************************************************************************/
-static void __near r_tau0_channel0_interrupt(void)
+void R_DMAC0_Create(void)
 {
-    /* Start user code. Do not edit comment generated here */
-	timer_1ms();
-    /* End user code. Do not edit comment generated here */
+    DRC0 = _80_DMA_OPERATION_ENABLE;
+    NOP();
+    NOP();
+    DMAMK0 = 1U; /* disable INTDMA0 interrupt */
+    DMAIF0 = 0U; /* clear INTDMA0 interrupt flag */
+    DMC0 = _40_DMA_TRANSFER_DIR_RAM2SFR | _00_DMA_DATA_SIZE_8 | _04_DMA_TRIGGER_TM02;
+    DSA0 = _02_DMA0_SFR_ADDRESS;
+    DRA0 = _FD4C_DMA0_RAM_ADDRESS;
+    DBC0 = _0064_DMA0_BYTE_COUNT;
+    DEN0 = 0U; /* disable DMA0 operation */
+}
+
+/***********************************************************************************************************************
+* Function Name: R_DMAC0_Start
+* Description  : This function enables DMA0 transfer.
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+void R_DMAC0_Start(void)
+{
+    DEN0 = 1U;
+    DST0 = 1U;
+}
+
+/***********************************************************************************************************************
+* Function Name: R_DMAC0_Stop
+* Description  : This function disables DMA0 transfer.
+* Arguments    : None
+* Return Value : None
+***********************************************************************************************************************/
+void R_DMAC0_Stop(void)
+{
+    if (DST0 != 0U)
+    {
+        DST0 = 0U;
+    }
+    
+    NOP();
+    NOP();
+    DEN0 = 0U; /* disable DMA0 operation */
 }
 
 /* Start user code for adding. Do not edit comment generated here */

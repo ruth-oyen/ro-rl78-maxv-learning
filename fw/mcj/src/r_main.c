@@ -23,7 +23,7 @@
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
 * Description  : This file implements main function.
-* Creation Date: 05/07/2026
+* Creation Date: 07/07/2026
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -34,6 +34,7 @@ Includes
 #include "r_cg_port.h"
 #include "r_cg_serial.h"
 #include "r_cg_timer.h"
+#include "r_cg_dmac.h"
 /* Start user code for include. Do not edit comment generated here */
 #include "stdbool.h"
 #include "tap_state_machine.h"
@@ -67,7 +68,7 @@ static volatile uint8_t tx_ring_write_pos;
 static volatile uint16_t tx_ring_count;
 
 // JTAG
-static uint8_t state;
+static uint8_t state_current;
 static uint8_t state_to;
 static uint8_t state_end_dr;
 static uint8_t state_end_ir;
@@ -91,23 +92,13 @@ const uint8_t __far crc8_table[256] = { // x8 + x2 + x + 1, left shift
     0xDE, 0xD9, 0xD0, 0xD7, 0xC2, 0xC5, 0xCC, 0xCB, 0xE6, 0xE1, 0xE8, 0xEF, 0xFA, 0xFD, 0xF4, 0xF3
 };
 
-typedef struct
-{
-    uint8_t len;   /* Number of P2 bytes in the path. */
-    uint8_t start; /* First P2 byte in tms_pattern. */
-} TAP_PATH;
-
 /* TMS sequence: 111110101001100110110101011110111100 */
-static const uint8_t __far tms_pattern[] =
+static uint8_t tms_pattern[] =
 {
-    0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03,
-    0x01, 0x03, 0x00, 0x02, 0x01, 0x03, 0x00, 0x02,
-    0x01, 0x03, 0x00, 0x02, 0x00, 0x02, 0x01, 0x03,
-    0x01, 0x03, 0x00, 0x02, 0x00, 0x02, 0x01, 0x03,
-    0x01, 0x03, 0x00, 0x02, 0x01, 0x03, 0x01, 0x03,
-    0x00, 0x02, 0x01, 0x03, 0x00, 0x02, 0x01, 0x03,
-    0x00, 0x02, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03,
-    0x01, 0x03, 0x00, 0x02, 0x01, 0x03, 0x01, 0x03,
+    0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x00, 0x02, 0x01, 0x03, 0x00, 0x02,
+    0x01, 0x03, 0x00, 0x02, 0x00, 0x02, 0x01, 0x03, 0x01, 0x03, 0x00, 0x02, 0x00, 0x02, 0x01, 0x03,
+    0x01, 0x03, 0x00, 0x02, 0x01, 0x03, 0x01, 0x03, 0x00, 0x02, 0x01, 0x03, 0x00, 0x02, 0x01, 0x03,
+    0x00, 0x02, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x01, 0x03, 0x00, 0x02, 0x01, 0x03, 0x01, 0x03,
     0x01, 0x03, 0x01, 0x03, 0x00, 0x02, 0x00, 0x02
 };
 
@@ -131,13 +122,17 @@ static const TAP_PATH __far tap_path[TAP_STATE_COUNT][TAP_STATE_COUNT] =
     {{ 6, 0}, { 2,10}, { 2, 0}, { 4, 8}, { 6,16}, { 6, 8}, { 8, 8}, {10, 8}, { 8,32}, { 4, 0}, { 6, 6}, { 8,22}, { 8, 6}, {10, 6}, {12, 6}, { 0, 0}}
 };
 
-typedef struct
+static uint8_t tck_pattern[128] =
 {
-	uint8_t b0;
-	uint8_t b1;
-	uint8_t b2;
-	uint8_t b3;
-} BYTES;
+	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
+	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
+	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
+	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
+	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
+	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
+	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
+	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
+};
 
 struct
 {
@@ -198,14 +193,150 @@ struct
 	} flw;
 } reg;
 
-struct
+static uint8_t get(void)
 {
-	union
+	uint8_t res;
+	while(rx_ring_count==0);
+	DI();
+	res = rx_ring_buf[rx_ring_read_pos];
+	rx_ring_read_pos++; rx_ring_count--;
+	EI();
+	return res;
+}
+
+#define SET_TXRING(dat)	\
+	do \
+	{ \
+		while(tx_ring_count >= sizeof(tx_ring_buf)); \
+		DI(); \
+		tx_ring_buf[tx_ring_write_pos]	= dat ; \
+		tx_ring_write_pos				= (tx_ring_write_pos + 1U) & 0x0FU; \
+		tx_ring_count++; \
+		EI(); \
+	}while(0)
+
+#define DMA_START(adr, cnt) \
+	do \
+	{ \
+		DRC0 = 0x80; \
+		NOP(); \
+		NOP(); \
+		DRA0 = (uint16_t)adr; \
+		DBC0 = cnt; \
+		DST0 = 1U; \
+	}while(0) // Wait for DMA0 to complete. UART reception continues during this loop. 
+
+#define DMA_WAIT() \
+	while(DST0)
+
+static uint8_t move_jtag_state(uint8_t state_from, uint8_t state_to)
+{
+	uint8_t i8;
+	uint8_t length;
+	uint8_t state_current;
+
+    length = tap_path[state_from][state_to].length;
+    for(i8 = 0; i8 < length; i8++)
 	{
-		uint32_t dword;
-		BYTES	bytes;
-	}u;
-} rxd, txd;
+		P2 = tms_pattern[tap_path[state_from][state_to].start + i8];
+		if(P2_bit.no1)
+		{
+			state_current = update_tap_state_machine(P2_bit.no0);
+			P1			  = state_current;
+		}
+	}
+	return state_current;
+}
+
+static uint8_t shift_jtag_pattern(uint8_t* pattern, uint32_t length)
+{
+	uint32_t count_h;
+	uint8_t count_l;
+	uint32_t i32;
+	uint8_t j8;
+
+	count_h = length >> 6;
+	count_l = length &  0b00111111;
+
+	#ifdef USE_DMA
+	for(i32 = 0; i32 < count_h; ++i32)
+	{
+		DMA_START(pattern, 64 * 2);
+		for(j8 = 0; j8 < 64; j8++) state_current = update_tap_state_machine(pattern[j8 * 2] & 0b00000001);
+		DMA_WAIT();
+	}
+	if(count_l != 0)
+	{
+		DMA_START(pattern, count_l * 2); // beware DBC0 == 0 means 1024 counts
+		for(j8 = 0; j8 < count_l; j8++) state_current = update_tap_state_machine(pattern[j8 * 2] & 0b00000001);
+		DMA_WAIT();
+	}
+
+	#else
+	// You should check that TCK is over 1MHz and add some NOP()
+	for(i32 = 0; i32 < count_h; ++i32)
+	{
+		for(j8 = 0; j8 < 64U * 2; ++j8)
+		{
+			P2 = pattern[j8];
+			state_current = update_tap_state_machine(P2_bit.no0);
+		}
+	}
+	for(j8 = 0; j8 < count_l * 2; ++j8)
+	{
+		P2 = pattern[j8];
+		state_current = update_tap_state_machine(P2_bit.no0);
+	}
+
+	#endif
+}
+
+static uint8_t shift_jtag_data(uint32_t length)
+{
+	uint32_t byte_length;
+	uint8_t byte_length_left;
+	uint32_t i32;
+	uint8_t j8;
+	uint8_t dat;
+	uint8_t tdo;
+
+	byte_length			= length >> 3;
+	byte_length_left	= length & 0b00000111;
+	for(i32 = 0; i32 < byte_length; i32++)
+	{
+		dat = get();
+		tdo = 0U;
+		for(j8 = 0; j8 < 8U; j8++)
+		{
+			TCK_OUT = L;
+			TDI_OUT = (dat >> j8) & 0b00000001;
+			TSM_OUT = ((i32 == (byte_length - 1U)) &&
+			           (j8 == 7U) && (byte_length_left == 0U)) ? H : L;
+			TCK_OUT = H;
+			tdo |= (uint8_t)(TDO_IN << j8);
+		}
+		SET_TXRING(tdo);
+	}
+	if(byte_length_left > 0U)
+	{
+		dat = get();
+		tdo = 0U;
+		for(j8 = 0; j8 < byte_length_left; j8++)
+		{
+			TCK_OUT = L;
+			TDI_OUT = (dat >> j8) & 0b00000001;
+			TSM_OUT = (j8 == (byte_length_left - 1U)) ? H : L;
+			TCK_OUT = H;
+			tdo |= (uint8_t)(TDO_IN << j8);
+		}
+		SET_TXRING(tdo);
+	}
+
+	/* The final scan bit is clocked with TMS=1, so TAP is now in EXIT1. */
+	state_current = update_tap_state_machine(H);
+	P1 = state_current;
+	return state_current;
+}
 
 /* End user code. Do not edit comment generated here */
 void R_MAIN_UserInit(void);
@@ -216,28 +347,14 @@ void R_MAIN_UserInit(void);
 * Arguments    : None
 * Return Value : None
 ***********************************************************************************************************************/
-
-uint8_t get(void)
-{
-	uint8_t res;
-	while(rx_ring_count==0);
-	DI(); res = rx_ring_buf[rx_ring_read_pos]; rx_ring_read_pos++; rx_ring_count--; EI();
-	return res;
-}
-
-#define SET_TXRING(dat)	\
-	while(tx_ring_count >= sizeof(tx_ring_buf)); \
-	DI(); tx_ring_buf[tx_ring_write_pos] = dat ; tx_ring_write_pos = (tx_ring_write_pos + 1U) & 0x0FU; tx_ring_count++; EI();
-
 void main(void)
 {
     R_MAIN_UserInit();
     /* Start user code. Do not edit comment generated here */
 	{	
-		uint8_t i, len, start;
-		static uint8_t cmd;
-		static uint8_t rx_crc8, rx_crc8_calc, tx_crc8_calc;
-		
+		DATA_EXCHANGE rxd, txd, tck_count;
+		uint8_t	cmd, rx_crc8, rx_crc8_calc, tx_crc8_calc;
+	
 		reg.ver.u.dword = VERSION;
 
  		while (1U)
@@ -247,18 +364,18 @@ void main(void)
 
 			if(!(CMD_IS_JTAG & cmd))
 			{//CTRL
-				rxd.u.bytes.b0 = get();
-				rxd.u.bytes.b1 = get();
-				rxd.u.bytes.b2 = get();
-				rxd.u.bytes.b3 = get();
+				rxd.bytes.b0 = get();
+				rxd.bytes.b1 = get();
+				rxd.bytes.b2 = get();
+				rxd.bytes.b3 = get();
 				rx_crc8 = get();
 
 				rx_crc8_calc = 0x00;
 				rx_crc8_calc = crc8_table[rx_crc8_calc ^ cmd];
-				rx_crc8_calc = crc8_table[rx_crc8_calc ^ rxd.u.bytes.b0];
-				rx_crc8_calc = crc8_table[rx_crc8_calc ^ rxd.u.bytes.b1];
-				rx_crc8_calc = crc8_table[rx_crc8_calc ^ rxd.u.bytes.b2];
-				rx_crc8_calc = crc8_table[rx_crc8_calc ^ rxd.u.bytes.b3];
+				rx_crc8_calc = crc8_table[rx_crc8_calc ^ rxd.bytes.b0];
+				rx_crc8_calc = crc8_table[rx_crc8_calc ^ rxd.bytes.b1];
+				rx_crc8_calc = crc8_table[rx_crc8_calc ^ rxd.bytes.b2];
+				rx_crc8_calc = crc8_table[rx_crc8_calc ^ rxd.bytes.b3];
 
 				SET_TXRING(cmd);
 				if(tx_ring_done)
@@ -274,40 +391,40 @@ void main(void)
 				if(rx_crc8 != rx_crc8_calc)
 				{
 					reg.sts.u.bits.err_rx_crc8 = 1;
-					txd.u.dword	= 0xFFFFFFFFU;
+					txd.dword = 0xFFFFFFFFU;
 				}
 				else
 				{
-					txd.u.dword	= 0x00000000U;
+					txd.dword = 0x00000000U;
 					switch(cmd)
 					{
 						// CTRL GET COMMANDS
-						case CMD_CTRL_GET_TEST: 	txd.u.dword	= reg.udv.u.dword; break;
-						case CMD_CTRL_GET_VERSION:	txd.u.dword	= reg.ver.u.dword; break;
-						case CMD_CTRL_GET_STATUS:	txd.u.dword	= reg.sts.u.dword; break;
-						case CMD_CTRL_GET_CRC16:	txd.u.dword	= reg.crc.u.dword; break;
-						case CMD_CTRL_GET_FLOW:		txd.u.dword	= reg.flw.u.dword; break;
+						case CMD_CTRL_GET_TEST: 	txd.dword	= reg.udv.u.dword; break;
+						case CMD_CTRL_GET_VERSION:	txd.dword	= reg.ver.u.dword; break;
+						case CMD_CTRL_GET_STATUS:	txd.dword	= reg.sts.u.dword; break;
+						case CMD_CTRL_GET_CRC16:	txd.dword	= reg.crc.u.dword; break;
+						case CMD_CTRL_GET_FLOW:		txd.dword	= reg.flw.u.dword; break;
 
 						// CTRL SET COMMANDS
-						case CMD_CTRL_SET_TEST:		reg.udv.u.dword  =  rxd.u.dword; break;
-						case CMD_CTRL_SET_STATUS:	DI(); reg.sts.u.dword &= ~rxd.u.dword; EI(); break;
-						case CMD_CTRL_SET_CRC16:	reg.crc.u.dword  =  rxd.u.dword; break;
-						case CMD_CTRL_SET_FLOW:		reg.flw.u.dword  =  rxd.u.dword; break;
-						default: reg.sts.u.bits.err_invalid_command = 1; txd.u.dword = 0xFFFFFFFFU; break;
+						case CMD_CTRL_SET_TEST:		reg.udv.u.dword  =  rxd.dword; break;
+						case CMD_CTRL_SET_STATUS:	DI(); reg.sts.u.dword &= ~rxd.dword; EI(); break;
+						case CMD_CTRL_SET_CRC16:	reg.crc.u.dword  =  rxd.dword; break;
+						case CMD_CTRL_SET_FLOW:		reg.flw.u.dword  =  rxd.dword; break;
+						default: reg.sts.u.bits.err_invalid_command = 1; txd.dword = 0xFFFFFFFFU; break;
     				}
 				}
 
 				tx_crc8_calc = 0x00;
 				tx_crc8_calc = crc8_table[tx_crc8_calc ^ cmd];
-				tx_crc8_calc = crc8_table[tx_crc8_calc ^ txd.u.bytes.b0];
-				tx_crc8_calc = crc8_table[tx_crc8_calc ^ txd.u.bytes.b1];
-				tx_crc8_calc = crc8_table[tx_crc8_calc ^ txd.u.bytes.b2];
-				tx_crc8_calc = crc8_table[tx_crc8_calc ^ txd.u.bytes.b3];
+				tx_crc8_calc = crc8_table[tx_crc8_calc ^ txd.bytes.b0];
+				tx_crc8_calc = crc8_table[tx_crc8_calc ^ txd.bytes.b1];
+				tx_crc8_calc = crc8_table[tx_crc8_calc ^ txd.bytes.b2];
+				tx_crc8_calc = crc8_table[tx_crc8_calc ^ txd.bytes.b3];
 
-				SET_TXRING(txd.u.bytes.b0);
-				SET_TXRING(txd.u.bytes.b1);
-				SET_TXRING(txd.u.bytes.b2);
-				SET_TXRING(txd.u.bytes.b3);
+				SET_TXRING(txd.bytes.b0);
+				SET_TXRING(txd.bytes.b1);
+				SET_TXRING(txd.bytes.b2);
+				SET_TXRING(txd.bytes.b3);
 				SET_TXRING(tx_crc8_calc);
        
 				if(tx_ring_done)
@@ -328,41 +445,54 @@ void main(void)
 						break; // ignored in this version
 
 					case CMD_JTAG_TRST:	
-						update_tap_state_machine(H); P2 = 0b00000001; P2 = 0b00000011; //TMS=1 TCK=0->1
-						update_tap_state_machine(H); P2 = 0b00000001; P2 = 0b00000011; //TMS=1 TCK=0->1
-						update_tap_state_machine(H); P2 = 0b00000001; P2 = 0b00000011; //TMS=1 TCK=0->1
-						update_tap_state_machine(H); P2 = 0b00000001; P2 = 0b00000011; //TMS=1 TCK=0->1
-						update_tap_state_machine(H); P2 = 0b00000001; P2 = 0b00000011; //TMS=1 TCK=0->1
-						state = 0;
-						P1    = state;
+						shift_jtag_pattern(tck_pattern, 5);
+						state_current		= STATE_TEST_LOGIC_RESET;
+						P1			 		= state_current;
 						break;
 
 					case CMD_JTAG_STATE:	
-						state_to = get(); 
-			            len      = tap_path[state][state_to].len;
-						start    = state;
-			            for(i=0; i < len; i++)
-						{
-							P2 = tms_pattern[tap_path[start][state_to].start + i];
-							if(P2_bit.no1) P1 = state = update_tap_state_machine(P2_bit.no0);
-						}
+						state_to			= get(); 
+						state_current		= move_jtag_state(state_current, state_to);
 						break;
 
 					case CMD_JTAG_ENDDR:
-						state_end_dr = get(); 
+						state_end_dr		= get(); 
 						break;
 
 					case CMD_JTAG_ENDIR:
-						state_end_ir = get();
+						state_end_ir		= get();
 						break;
 
 					case CMD_JTAG_RUNTEST:
+						tck_count.bytes.b0	= get();
+						tck_count.bytes.b1	= get();
+						tck_count.bytes.b2	= get();
+						tck_count.bytes.b3	= get();
+						shift_jtag_pattern(tck_pattern, tck_count.dword);
 						break;
 
 					case CMD_JTAG_SDR:	
+						tck_count.bytes.b0	= get();
+						tck_count.bytes.b1	= get();
+						tck_count.bytes.b2	= get();
+						tck_count.bytes.b3	= get();
+						state_current		= move_jtag_state(state_current, STATE_SHIFT_DR);
+						state_current  		= shift_jtag_data(tck_count.dword);
+						state_current		= move_jtag_state(state_current, state_end_dr);
 						break;
 
 					case CMD_JTAG_SIR:
+						tck_count.bytes.b0	= get();
+						tck_count.bytes.b1	= get();
+						tck_count.bytes.b2	= get();
+						tck_count.bytes.b3	= get();
+						state_current		= move_jtag_state(state_current, STATE_SHIFT_IR);
+						state_current		= shift_jtag_data(tck_count.dword);
+						state_current		= move_jtag_state(state_current, state_end_ir);
+						break;
+
+					default:
+						reg.sts.u.bits.err_invalid_command = 1;
 						break;
 				}
 			}
@@ -384,6 +514,7 @@ void R_MAIN_UserInit(void)
     /* Start user code. Do not edit comment generated here */
 	R_UART0_Start();
 	R_TAU0_Channel0_Start();
+	R_TAU0_Channel2_Start();
     EI();
     /* End user code. Do not edit comment generated here */
 }
