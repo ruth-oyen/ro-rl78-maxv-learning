@@ -2,27 +2,7 @@ import sys
 import ctypes
 import serial
 from crc8 import crc8
-
-CMD_CTRL_GET_TEST	 = 0x01
-CMD_CTRL_GET_VERSION = 0x02
-CMD_CTRL_GET_STATUS	 = 0x03
-CMD_CTRL_GET_CRC16	 = 0x04
-CMD_CTRL_GET_FLOW	 = 0x05
-CMD_CTRL_SET_TEST	 = 0x08
-CMD_CTRL_SET_STATUS  = 0x0B
-CMD_CTRL_SET_CRC16	 = 0x0C
-CMD_CTRL_SET_FLOW	 = 0x0D
-
-CMD_JTAG_FREQUENCY	 = 0x80
-CMD_JTAG_TRST		 = 0x81
-CMD_JTAG_STATE		 = 0x82
-CMD_JTAG_ENDDR		 = 0x83
-CMD_JTAG_ENDIR		 = 0x84
-CMD_JTAG_RUNTEST	 = 0x85
-CMD_JTAG_SDR		 = 0x86
-CMD_JTAG_SIR		 = 0x87
-
-CMD_IS_JTAG          = 0x80
+from mcj import *
 
 BAUDRATE = 1_000_000 # All UART communication in this project uses 1[Mbps]
 
@@ -83,8 +63,8 @@ if __name__ == "__main__":
         ############################################################################
         print("Test 01 : reads TEST after write")
         test_count = test_count + 1
-        test_data = 0x01234567
-        wr_tx_frame = CTRL_FRAME(cmd=CMD_CTRL_SET_TEST, data=DATA(dword=test_data))
+        test_data = DATA(dword=0x01234567)
+        wr_tx_frame = CTRL_FRAME(cmd=CMD_CTRL_SET_TEST, data=test_data)
         wr_rx_frame = send_rciv_frame(wr_tx_frame)
         print(f"  CMD_CTRL_SET_TEST:    Write = 0x{wr_tx_frame.data.dword:08X}")
         rd_tx_frame = CTRL_FRAME(cmd=CMD_CTRL_GET_TEST)
@@ -114,7 +94,23 @@ if __name__ == "__main__":
         rd_tx_frame = CTRL_FRAME(cmd=CMD_CTRL_GET_STATUS)
         rd_rx_frame = send_rciv_frame(rd_tx_frame)
         print(f"  CMD_CTRL_GET_STATUS:  Read  = 0x{rd_rx_frame.data.dword:08X}")
-        if rd_tx_frame.data.dword == 0x00000000:
+        if rd_rx_frame.data.dword == 0x00000000:
+            ok_count = ok_count + 1
+            print(f"  Test Result(OK)\n")
+        else:
+            print(f"  Test Result(NG)\n")
+
+        ############################################################################
+        print("Test 04: reads CRC after write")
+        test_count = test_count + 1
+        test_data = DATA(words=WORDS(w0=0xCDEF, w1=0x89AB))
+        wr_tx_frame = CTRL_FRAME(cmd=CMD_CTRL_SET_CRC16, data=test_data)
+        wr_rx_frame = send_rciv_frame(wr_tx_frame)
+        print(f"  CMD_CTRL_SET_CRC16:   Write = 0x{wr_tx_frame.data.dword:08X}")
+        rd_tx_frame = CTRL_FRAME(cmd=CMD_CTRL_GET_CRC16)
+        rd_rx_frame = send_rciv_frame(rd_tx_frame)
+        print(f"  CMD_CTRL_GET_CRC16:   Read  = 0x{rd_rx_frame.data.dword:08X}")
+        if wr_tx_frame.data.dword == rd_rx_frame.data.dword:
             ok_count = ok_count + 1
             print(f"  Test Result(OK)\n")
         else:
@@ -122,36 +118,3 @@ if __name__ == "__main__":
 
         print(f"test_count = {test_count}")
         print(f"ok_count   = {ok_count}")
-
-        ############################################################################
-        print("Test 014: reads CRC after write")
-        test_count = test_count + 1
-        test_data1 = 0x0123
-        test_data2 = 0x0123
-        wr_tx_frame = CTRL_FRAME(cmd=CMD_CTRL_SET_TEST, data=DATA(dword=test_data))
-        wr_rx_frame = send_rciv_frame(wr_tx_frame)
-        print(f"  CMD_CTRL_SET_TEST:    Write = 0x{wr_tx_frame.data.dword:08X}")
-        rd_tx_frame = CTRL_FRAME(cmd=CMD_CTRL_GET_TEST)
-        rd_rx_frame = send_rciv_frame(rd_tx_frame)
-        print(f"  CMD_CTRL_GET_TEST:    Read  = 0x{rd_rx_frame.data.dword:08X}")
-        if wr_tx_frame.data.dword == rd_rx_frame.data.dword:
-            ok_count = ok_count + 1
-            print(f"  Test Result(OK)\n")
-        else:
-            print(f"  Test Result(NG)\n")
-
-
-#    print(f"IDCODE:           0x{idcode.raw:08X}")
-#    print(f"LSB(should be 1): 0x{idcode.bits.lsb:02X}")
-#    print(f"Manufacture ID:   0x{idcode.bits.manufacture_id:04X}")
-#    print(f"Part Number:      0x{idcode.bits.part_number:04X}")
-#    print(f"Version:          0x{idcode.bits.version:02X}")
-
-
-
-
-#    print(f"IDCODE:           0x{idcode.raw:08X}")
-#    print(f"LSB(should be 1): 0x{idcode.bits.lsb:02X}")
-#    print(f"Manufacture ID:   0x{idcode.bits.manufacture_id:04X}")
-#    print(f"Part Number:      0x{idcode.bits.part_number:04X}")
-#    print(f"Version:          0x{idcode.bits.version:02X}")
