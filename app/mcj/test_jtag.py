@@ -120,7 +120,7 @@ def svf_program_cfm(ser, filename):
                 CMD_JTAG_STATE  + STATE_RUN_TEST_IDLE + # sticky STATE IDLE from previous RUNTEST IDLE
                 CMD_JTAG_RUNTEST+ i2c(100)              # RUNTEST 100 TCK;
             )
-            ser.read(1)
+        ser.read(3328)
 
 
 def svf_program_ufm(ser, filename):
@@ -143,7 +143,7 @@ def svf_program_ufm(ser, filename):
                 CMD_JTAG_STATE   + STATE_RUN_TEST_IDLE + # sticky STATE IDLE from previous RUNTEST IDLE
                 CMD_JTAG_RUNTEST + i2c(100)              # RUNTEST 100 TCK;
             )
-            ser.read(1)
+    ser.read(512)
 
 
 def svf_verify_cfm(ser, filename):
@@ -158,14 +158,11 @@ def svf_verify_cfm(ser, filename):
     )
     ser.read(2) # waits for the respons of CMD_JTAG_RUNTEST * 2
     with open(filename, "rb") as f:
-        for i in range(3328):
-            ser.write(CMD_JTAG_SDR_TDO + i2b(16, 0xFFFF)) # SDR 16 TDI (FFFF) TDO (****) MASK (FFFF);
-            verify_data = f.read(2)
-            read_data = ser.read(2)
-            if verify_data != read_data:
-                log(f"i={i}:len(verify_data)={len(verify_data)}, len(read_data)={len(read_data.hex())}")
-                log(f"i={i}:verify_data={verify_data.hex()}, read_data={read_data.hex()}")
-                return NG
+        ser.write((CMD_JTAG_SDR_TDO + i2b(16, 0xFFFF)) * 3328) # SDR 16 TDI (FFFF) TDO (****) MASK (FFFF);
+        verify_data = f.read(3328 * 2)
+        read_data = ser.read(3328 * 2)
+        if verify_data != read_data:
+            return NG
     return OK
 
 
@@ -181,14 +178,11 @@ def svf_verify_ufm(ser, filename):
     )
     ser.read(2) # waits for the respons of CMD_JTAG_RUNTEST * 2
     with open(filename, "rb") as f:
-        for i in range(512):
-            ser.write(CMD_JTAG_SDR_TDO + i2b(16, 0xFFFF)) # SDR 16 TDI (FFFF) TDO (****) MASK (FFFF);
-            verify_data = f.read(2)
-            read_data = ser.read(2)
-            if verify_data != read_data:
-                log(f"i={i}:len(verify_data)={len(verify_data)}, len(read_data)={len(read_data.hex())}")
-                log(f"i={i}:verify_data={verify_data.hex()}, read_data={read_data.hex()}")
-                return NG
+        ser.write((CMD_JTAG_SDR_TDO + i2b(16, 0xFFFF)) * 512) # SDR 16 TDI (FFFF) TDO (****) MASK (FFFF);
+        verify_data = f.read(512 * 2)
+        read_data = ser.read(512 * 2)
+        if verify_data != read_data:
+            return NG
     return OK
 
 
