@@ -23,7 +23,7 @@
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
 * Description  : This file implements main function.
-* Creation Date: 19/07/2026
+* Creation Date: 20/07/2026
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -218,20 +218,6 @@ static uint8_t get(void)
 		EI(); \
 	}while(0)
 
-#define DMA_START(adr, cnt) \
-	do \
-	{ \
-		DRC0 = 0x80; \
-		NOP(); \
-		NOP(); \
-		DRA0 = (uint16_t)adr; \
-		DBC0 = cnt; \
-		DST0 = 1U; \
-	}while(0) // Wait for DMA0 to complete. UART reception continues during this loop. 
-
-#define DMA_WAIT() \
-	while(DST0)
-
 static uint8_t move_jtag_state(uint8_t state_from, uint8_t state_to)
 {
 	uint8_t i8;
@@ -249,49 +235,6 @@ static uint8_t move_jtag_state(uint8_t state_from, uint8_t state_to)
 		}
 	}
 	return state_current;
-}
-
-static void shift_jtag_pattern(uint8_t* pattern, uint32_t length)
-{
-	uint32_t count_h;
-	uint8_t count_l;
-	uint32_t i32;
-	uint8_t j8;
-
-	count_h = length >> 6;
-	count_l = length &  0b00111111;
-
-	#ifdef USE_DMA
-	for(i32 = 0; i32 < count_h; ++i32)
-	{
-		DMA_START(pattern, 64 * 2);
-		for(j8 = 0; j8 < 64; j8++) state_current = update_tap_state_machine(pattern[j8 * 2] & 0b00000001);
-		DMA_WAIT();
-	}
-	if(count_l != 0)
-	{
-		DMA_START(pattern, count_l * 2); // beware DBC0 == 0 means 1024 counts
-		for(j8 = 0; j8 < count_l; j8++) state_current = update_tap_state_machine(pattern[j8 * 2] & 0b00000001);
-		DMA_WAIT();
-	}
-
-	#else
-	// You should check that TCK is over 1MHz and add some NOP()
-	for(i32 = 0; i32 < count_h; ++i32)
-	{
-		for(j8 = 0; j8 < 64U * 2; ++j8)
-		{
-			P2 = pattern[j8];
-			state_current = update_tap_state_machine(P2_bit.no0);
-		}
-	}
-	for(j8 = 0; j8 < count_l * 2; ++j8)
-	{
-		P2 = pattern[j8];
-		state_current = update_tap_state_machine(P2_bit.no0);
-	}
-
-	#endif
 }
 
 static uint8_t shift_jtag_data(uint32_t length)
@@ -417,7 +360,8 @@ void main(void)
     /* Start user code. Do not edit comment generated here */
 	{	
 		DATA_EXCHANGE rxd, txd, tck_count;
-		uint8_t	cmd, rx_crc8, rx_crc8_calc, tx_crc8_calc;
+		uint8_t	i8, cmd, rx_crc8, rx_crc8_calc, tx_crc8_calc;
+		uint32_t i32;
 	
 		reg.ver.u.dword = VERSION;
  		while (1U)
@@ -516,7 +460,7 @@ void main(void)
 						else if(cmd == CMD_JTAG_TRST_Z)		{reg.sts.u.bits.err_unsupported_command = 1; break;}
 						else if(cmd == CMD_JTAG_TRST_FORCE)
 						{
-							shift_jtag_pattern(tms_pattern, 5);
+							for(i8 = 0; i8 < 10; ++i8) P2 = tms_pattern[i8]; // toggles TCK 5 times with TMS high
 							state_current		= STATE_TEST_LOGIC_RESET;
 							P1			 		= state_current;
 							break;
@@ -541,7 +485,12 @@ void main(void)
 						tck_count.bytes.b1	= get();
 						tck_count.bytes.b2	= get();
 						tck_count.bytes.b3	= get();
-						shift_jtag_pattern(tck_pattern, tck_count.dword);
+						TMS_OUT = L;	
+						for(i32 = 0; i32 < tck_count.dword; ++i32)
+						{// you should add NOP()s to adjust 10us TCK cycle
+							TCK_OUT = L; NOP(); NOP(); NOP();
+							TCK_OUT = H;
+						}
 						SET_TXRING(CMD_JTAG_RUNTEST);
 						if(tx_ring_done)
 						{

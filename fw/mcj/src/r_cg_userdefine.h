@@ -23,7 +23,7 @@
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
 * Description  : This file includes user definition.
-* Creation Date: 19/07/2026
+* Creation Date: 20/07/2026
 ***********************************************************************************************************************/
 
 #ifndef _USER_DEF_H
@@ -78,8 +78,6 @@ extern void timer_10ms(void);
 #define RTSn					(P1_bit.no4)
 #define RTS_GO					(0)
 #define RTS_STOP				(1)
-
-//#define USE_DMA // Do NOT use this. This has a bug.
 
 typedef struct
 {

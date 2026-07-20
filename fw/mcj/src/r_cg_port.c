@@ -23,7 +23,7 @@
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
 * Description  : This file implements device driver for PORT module.
-* Creation Date: 19/07/2026
+* Creation Date: 20/07/2026
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -55,7 +55,7 @@ Global variables and functions
 ***********************************************************************************************************************/
 void R_PORT_Create(void)
 {
-    P1 = _00_Pn0_OUTPUT_0 | _00_Pn1_OUTPUT_0 | _00_Pn2_OUTPUT_0 | _00_Pn3_OUTPUT_0 | _10_Pn4_OUTPUT_1;
+    P1 = _00_Pn0_OUTPUT_0 | _02_Pn1_OUTPUT_1 | _00_Pn2_OUTPUT_0 | _00_Pn3_OUTPUT_0 | _10_Pn4_OUTPUT_1;
     P2 = _00_Pn0_OUTPUT_0 | _00_Pn1_OUTPUT_0 | _00_Pn2_OUTPUT_0;
     P4 = _00_Pn1_OUTPUT_0;
     PU4 = _00_PUn0_PULLUP_OFF | _04_PUn2_PULLUP_ON;

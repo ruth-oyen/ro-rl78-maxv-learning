@@ -44,7 +44,6 @@ def svf_init(ser):
     ser.write(bytearray([CMD_JTAG_STATE,     STATE_RUN_TEST_IDLE]))         # sticky STATE IDLE from previous RUNTEST IDLE
     ser.write(bytearray([CMD_JTAG_RUNTEST]) + i2c(1003))                    # RUNTEST 1003 TCK;
     ser.read(1)
-    sleep(0.0026)
 
 
 def svf_check_silicon_id(ser):
@@ -122,7 +121,6 @@ def svf_program_cfm(ser, filename):
             ser.write(bytearray([CMD_JTAG_STATE,     STATE_RUN_TEST_IDLE])) # sticky STATE IDLE from previous RUNTEST IDLE
             ser.write(bytearray([CMD_JTAG_RUNTEST]) + i2c(100))             # RUNTEST 100 TCK;
             ser.read(1)
-            sleep(0.0001)
 
 
 def svf_program_ufm(ser, filename):
@@ -240,7 +238,6 @@ def svf_finalize(ser, filename):
     ser.write(bytearray([CMD_JTAG_STATE,     STATE_RUN_TEST_IDLE]))         # STATE IDLE;
 
     ser.flush()
-    sleep(0.01)
 
 def svf_idcode(ser):
     ser.write(bytearray([CMD_JTAG_STATE, STATE_SHIFT_DR]))
@@ -278,6 +275,7 @@ if __name__ == "__main__":
     ufm_filename = "./base3.ufm"
 
     with serial.Serial(com_num, BAUDRATE, timeout=6) as ser:
+
         ser.write(bytearray([CMD_JTAG_TRST, CMD_JTAG_TRST_FORCE])) 
         log("Force the TAP controller reset by applying five TCK cycles with TMS High")
 
@@ -295,11 +293,11 @@ if __name__ == "__main__":
             log(f"SILICON ID = {silicon_id} (This value should be '8232 2aa2 4a82 8c0c 0000'")
             sys.exit(1)
 
-        if Path("./base2.cfm").stat().st_size != 6656:
+        if Path(cfm_filename).stat().st_size != 6656:
             log("Invalid CFM file size")
             sys.exit(1)
 
-        if Path("./base2.ufm").stat().st_size != 1024:
+        if Path(ufm_filename).stat().st_size != 1024:
             log("Invalid UFM file size")
             sys.exit(1)
 
