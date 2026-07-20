@@ -23,7 +23,7 @@
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
 * Description  : This file implements main function.
-* Creation Date: 07/07/2026
+* Creation Date: 19/07/2026
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -163,6 +163,7 @@ struct
 			struct
 			{
 				uint8_t err_invalid_command :1;
+				uint8_t err_unsupported_command :1;
 				uint8_t err_rx_crc8:1;
 				uint8_t err_rx_ring_overflow:1;
 			} bits;
@@ -199,7 +200,9 @@ static uint8_t get(void)
 	while(rx_ring_count==0);
 	DI();
 	res = rx_ring_buf[rx_ring_read_pos];
-	rx_ring_read_pos++; rx_ring_count--;
+	rx_ring_read_pos++;
+	rx_ring_count--;
+	if(rx_ring_count < 64U) RTSn = RTS_GO;
 	EI();
 	return res;
 }
@@ -233,7 +236,7 @@ static uint8_t move_jtag_state(uint8_t state_from, uint8_t state_to)
 {
 	uint8_t i8;
 	uint8_t length;
-	uint8_t state_current;
+	uint8_t state_current = state_from;
 
     length = tap_path[state_from][state_to].length;
     for(i8 = 0; i8 < length; i8++)
@@ -248,7 +251,7 @@ static uint8_t move_jtag_state(uint8_t state_from, uint8_t state_to)
 	return state_current;
 }
 
-static uint8_t shift_jtag_pattern(uint8_t* pattern, uint32_t length)
+static void shift_jtag_pattern(uint8_t* pattern, uint32_t length)
 {
 	uint32_t count_h;
 	uint8_t count_l;
@@ -310,12 +313,10 @@ static uint8_t shift_jtag_data(uint32_t length)
 		{
 			TCK_OUT = L;
 			TDI_OUT = (dat >> j8) & 0b00000001;
-			TSM_OUT = ((i32 == (byte_length - 1U)) &&
-			           (j8 == 7U) && (byte_length_left == 0U)) ? H : L;
+			TMS_OUT = ((i32 == (byte_length - 1U)) && (j8 == 7U) && (byte_length_left == 0U)) ? H : L;
 			TCK_OUT = H;
 			tdo |= (uint8_t)(TDO_IN << j8);
 		}
-		SET_TXRING(tdo);
 	}
 	if(byte_length_left > 0U)
 	{
@@ -325,11 +326,74 @@ static uint8_t shift_jtag_data(uint32_t length)
 		{
 			TCK_OUT = L;
 			TDI_OUT = (dat >> j8) & 0b00000001;
-			TSM_OUT = (j8 == (byte_length_left - 1U)) ? H : L;
+			TMS_OUT = (j8 == (byte_length_left - 1U)) ? H : L;
+			TCK_OUT = H;
+			tdo |= (uint8_t)(TDO_IN << j8);
+		}
+	}
+
+	/* The final scan bit is clocked with TMS=1, so TAP is now in EXIT1. */
+	state_current = update_tap_state_machine(H);
+	P1 = state_current;
+	return state_current;
+}
+
+static uint8_t shift_jtag_data_tdo(uint32_t length)
+{
+	uint32_t byte_length;
+	uint8_t byte_length_left;
+	uint32_t i32;
+	uint8_t j8;
+	uint8_t dat;
+	uint8_t tdo;
+
+	byte_length			= length >> 3;
+	byte_length_left	= length & 0b00000111;
+	for(i32 = 0; i32 < byte_length; i32++)
+	{
+		dat = get();
+		tdo = 0U;
+		for(j8 = 0; j8 < 8U; j8++)
+		{
+			TCK_OUT = L;
+			TDI_OUT = (dat >> j8) & 0b00000001;
+			TMS_OUT = ((i32 == (byte_length - 1U)) && (j8 == 7U) && (byte_length_left == 0U)) ? H : L;
 			TCK_OUT = H;
 			tdo |= (uint8_t)(TDO_IN << j8);
 		}
 		SET_TXRING(tdo);
+		if(tx_ring_done)
+		{
+			DI();
+			tx_ring_done = 0;
+			TXD0 = tx_ring_buf[tx_ring_read_pos];
+     		tx_ring_read_pos = (tx_ring_read_pos + 1U) & 0x0FU;
+   			tx_ring_count--;
+			EI();
+		}
+	}
+	if(byte_length_left > 0U)
+	{
+		dat = get();
+		tdo = 0U;
+		for(j8 = 0; j8 < byte_length_left; j8++)
+		{
+			TCK_OUT = L;
+			TDI_OUT = (dat >> j8) & 0b00000001;
+			TMS_OUT = (j8 == (byte_length_left - 1U)) ? H : L;
+			TCK_OUT = H;
+			tdo |= (uint8_t)(TDO_IN << j8);
+		}
+		SET_TXRING(tdo);
+		if(tx_ring_done)
+		{
+			DI();
+			tx_ring_done = 0;
+			TXD0 = tx_ring_buf[tx_ring_read_pos];
+     		tx_ring_read_pos = (tx_ring_read_pos + 1U) & 0x0FU;
+   			tx_ring_count--;
+			EI();
+		}
 	}
 
 	/* The final scan bit is clocked with TMS=1, so TAP is now in EXIT1. */
@@ -356,7 +420,6 @@ void main(void)
 		uint8_t	cmd, rx_crc8, rx_crc8_calc, tx_crc8_calc;
 	
 		reg.ver.u.dword = VERSION;
-
  		while (1U)
   		{
 			cmd = get();
@@ -442,13 +505,23 @@ void main(void)
 				switch(cmd)
 				{
 					case CMD_JTAG_FREQUENCY:
-						break; // ignored in this version
+						cmd = get(); // ignored in this version
+						break;
 
 					case CMD_JTAG_TRST:	
-						shift_jtag_pattern(tck_pattern, 5);
-						state_current		= STATE_TEST_LOGIC_RESET;
-						P1			 		= state_current;
-						break;
+						cmd = get();
+						if     (cmd == CMD_JTAG_TRST_ABSEN)	{/* ignored */                               break;}
+						else if(cmd == CMD_JTAG_TRST_ON)	{reg.sts.u.bits.err_unsupported_command = 1; break;}
+						else if(cmd == CMD_JTAG_TRST_OFF)	{reg.sts.u.bits.err_unsupported_command = 1; break;}
+						else if(cmd == CMD_JTAG_TRST_Z)		{reg.sts.u.bits.err_unsupported_command = 1; break;}
+						else if(cmd == CMD_JTAG_TRST_FORCE)
+						{
+							shift_jtag_pattern(tms_pattern, 5);
+							state_current		= STATE_TEST_LOGIC_RESET;
+							P1			 		= state_current;
+							break;
+						}
+						else 								{reg.sts.u.bits.err_invalid_command     = 1; break;}
 
 					case CMD_JTAG_STATE:	
 						state_to			= get(); 
@@ -469,6 +542,16 @@ void main(void)
 						tck_count.bytes.b2	= get();
 						tck_count.bytes.b3	= get();
 						shift_jtag_pattern(tck_pattern, tck_count.dword);
+						SET_TXRING(CMD_JTAG_RUNTEST);
+						if(tx_ring_done)
+						{
+							DI();
+							tx_ring_done = 0;
+							TXD0 = tx_ring_buf[tx_ring_read_pos];
+     						tx_ring_read_pos = (tx_ring_read_pos + 1U) & 0x0FU;
+   							tx_ring_count--;
+							EI();
+						}
 						break;
 
 					case CMD_JTAG_SDR:	
@@ -481,6 +564,16 @@ void main(void)
 						state_current		= move_jtag_state(state_current, state_end_dr);
 						break;
 
+					case CMD_JTAG_SDR_TDO:	
+						tck_count.bytes.b0	= get();
+						tck_count.bytes.b1	= get();
+						tck_count.bytes.b2	= get();
+						tck_count.bytes.b3	= get();
+						state_current		= move_jtag_state(state_current, STATE_SHIFT_DR);
+						state_current  		= shift_jtag_data_tdo(tck_count.dword);
+						state_current		= move_jtag_state(state_current, state_end_dr);
+						break;
+
 					case CMD_JTAG_SIR:
 						tck_count.bytes.b0	= get();
 						tck_count.bytes.b1	= get();
@@ -488,6 +581,16 @@ void main(void)
 						tck_count.bytes.b3	= get();
 						state_current		= move_jtag_state(state_current, STATE_SHIFT_IR);
 						state_current		= shift_jtag_data(tck_count.dword);
+						state_current		= move_jtag_state(state_current, state_end_ir);
+						break;
+
+					case CMD_JTAG_SIR_TDO:
+						tck_count.bytes.b0	= get();
+						tck_count.bytes.b1	= get();
+						tck_count.bytes.b2	= get();
+						tck_count.bytes.b3	= get();
+						state_current		= move_jtag_state(state_current, STATE_SHIFT_IR);
+						state_current		= shift_jtag_data_tdo(tck_count.dword);
 						state_current		= move_jtag_state(state_current, state_end_ir);
 						break;
 
@@ -528,6 +631,7 @@ static void __near uart0_rx_interrupt(void)
 		rx_ring_buf[rx_ring_write_pos] = RXD0;
 		rx_ring_write_pos++;
 		rx_ring_count++;
+		if(rx_ring_count >= 128U) RTSn = RTS_STOP;
 	}
 	else
 	{// Ring Buffer Overflow Error

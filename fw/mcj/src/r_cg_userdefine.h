@@ -23,7 +23,7 @@
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
 * Description  : This file includes user definition.
-* Creation Date: 07/07/2026
+* Creation Date: 19/07/2026
 ***********************************************************************************************************************/
 
 #ifndef _USER_DEF_H
@@ -58,16 +58,28 @@ extern void timer_10ms(void);
 #define CMD_JTAG_ENDIR		    (0x84U)
 #define CMD_JTAG_RUNTEST		(0x85U)
 #define CMD_JTAG_SDR		    (0x86U)
-#define CMD_JTAG_SIR		    (0x87U)
+#define CMD_JTAG_SDR_TDO	    (0x87U)
+#define CMD_JTAG_SIR		    (0x88U)
+#define CMD_JTAG_SIR_TDO	    (0x89U)
+
+#define CMD_JTAG_TRST_ABSEN		(0xF0U)
+#define CMD_JTAG_TRST_ON		(0xF1U)
+#define CMD_JTAG_TRST_OFF		(0xF2U)
+#define CMD_JTAG_TRST_Z			(0xF3U)
+#define CMD_JTAG_TRST_FORCE		(0xF4U)
 
 #define CMD_IS_JTAG             (0x80U)
 
-#define TSM_OUT                 (P2_bit.no0)
+#define TMS_OUT                 (P2_bit.no0)
 #define TCK_OUT                 (P2_bit.no1)
 #define TDI_OUT                 (P2_bit.no2)
 #define TDO_IN                  (P2_bit.no3)
 
-#define USE_DMA
+#define RTSn					(P1_bit.no4)
+#define RTS_GO					(0)
+#define RTS_STOP				(1)
+
+//#define USE_DMA // Do NOT use this. This has a bug.
 
 typedef struct
 {
