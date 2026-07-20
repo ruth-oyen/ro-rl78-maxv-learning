@@ -30,13 +30,13 @@ if __name__ == "__main__":
 
     com_num = sys.argv[1]
 
-    with serial.Serial(com_num, BAUDRATE, timeout=1, rtscts=False) as ser:
+    with serial.Serial(com_num, BAUDRATE, timeout=1, rtscts=True) as ser:
         # Ignored commands never be full
         #print("CTS_STOP" if ser.cts == CTS_STOP else "CTS_GO")
         #ser.write(bytearray([CMD_JTAG_FREQUENCY, 0x00]) * 350)
         #print("CTS_STOP" if ser.cts == CTS_STOP else "CTS_GO")
 
-        ser.write(bytearray([CMD_JTAG_STATE,     STATE_RUN_TEST_IDLE]))
+        ser.write(CMD_JTAG_STATE + STATE_RUN_TEST_IDLE)
         print("CTS_STOP" if ser.cts == CTS_STOP else "CTS_GO")
-        ser.write((bytearray([CMD_JTAG_RUNTEST]) + i2c(1000000)) * 20)
+        ser.write((CMD_JTAG_RUNTEST + i2c(200)) * 210)
         print("CTS_STOP" if ser.cts == CTS_STOP else "CTS_GO")

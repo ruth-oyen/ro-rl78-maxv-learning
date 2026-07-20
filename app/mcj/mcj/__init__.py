@@ -1,48 +1,50 @@
-STATE_TEST_LOGIC_RESET = 0x00
-STATE_RUN_TEST_IDLE    = 0x01
+STATE_TEST_LOGIC_RESET = bytearray([0x00])
+STATE_RUN_TEST_IDLE    = bytearray([0x01])
 
-STATE_SELECT_DR_SCAN   = 0x02
-STATE_CAPTURE_DR       = 0x03
-STATE_SHIFT_DR         = 0x04
-STATE_EXIT1_DR         = 0x05
-STATE_PAUSE_DR         = 0x06
-STATE_EXIT2_DR         = 0x07
-STATE_UPDATE_DR        = 0x08
+STATE_SELECT_DR_SCAN   = bytearray([0x02])
+STATE_CAPTURE_DR       = bytearray([0x03])
+STATE_SHIFT_DR         = bytearray([0x04])
+STATE_EXIT1_DR         = bytearray([0x05])
+STATE_PAUSE_DR         = bytearray([0x06])
+STATE_EXIT2_DR         = bytearray([0x07])
+STATE_UPDATE_DR        = bytearray([0x08])
 
-STATE_SELECT_IR_SCAN   = 0x09
-STATE_CAPTURE_IR       = 0x0A
-STATE_SHIFT_IR         = 0x0B
-STATE_EXIT1_IR         = 0x0C
-STATE_PAUSE_IR         = 0x0D
-STATE_EXIT2_IR         = 0x0E
-STATE_UPDATE_IR        = 0x0F
+STATE_SELECT_IR_SCAN   = bytearray([0x09])
+STATE_CAPTURE_IR       = bytearray([0x0A])
+STATE_SHIFT_IR         = bytearray([0x0B])
+STATE_EXIT1_IR         = bytearray([0x0C])
+STATE_PAUSE_IR         = bytearray([0x0D])
+STATE_EXIT2_IR         = bytearray([0x0E])
+STATE_UPDATE_IR        = bytearray([0x0F])
 
-CMD_CTRL_GET_TEST	 = 0x01
-CMD_CTRL_GET_VERSION = 0x02
-CMD_CTRL_GET_STATUS	 = 0x03
-CMD_CTRL_GET_CRC16	 = 0x04
-CMD_CTRL_GET_FLOW	 = 0x05
+CMD_CTRL_GET_TEST	   = bytearray([0x01])
+CMD_CTRL_GET_VERSION   = bytearray([0x02])
+CMD_CTRL_GET_STATUS	   = bytearray([0x03])
+CMD_CTRL_GET_CRC16	   = bytearray([0x04])
+CMD_CTRL_GET_FLOW	   = bytearray([0x05])
 
-CMD_CTRL_SET_TEST	 = 0x11
-CMD_CTRL_SET_STATUS  = 0x13
-CMD_CTRL_SET_CRC16	 = 0x14
-CMD_CTRL_SET_FLOW	 = 0x15
+CMD_CTRL_SET_TEST	   = bytearray([0x11])
+CMD_CTRL_SET_STATUS    = bytearray([0x13])
+CMD_CTRL_SET_CRC16	   = bytearray([0x14])
+CMD_CTRL_SET_FLOW	   = bytearray([0x15])
 
-CMD_JTAG_FREQUENCY	 = 0x80
-CMD_JTAG_TRST		 = 0x81
-CMD_JTAG_STATE		 = 0x82
-CMD_JTAG_ENDDR		 = 0x83
-CMD_JTAG_ENDIR		 = 0x84
-CMD_JTAG_RUNTEST	 = 0x85
-CMD_JTAG_SDR		 = 0x86
-CMD_JTAG_SDR_TDO	 = 0x87
-CMD_JTAG_SIR		 = 0x88
-CMD_JTAG_SIR_TDO	 = 0x89
+CMD_JTAG_FREQUENCY	   = bytearray([0x80])
+CMD_JTAG_TRST		   = bytearray([0x81])
+CMD_JTAG_STATE		   = bytearray([0x82])
+CMD_JTAG_ENDDR		   = bytearray([0x83])
+CMD_JTAG_ENDIR		   = bytearray([0x84])
+CMD_JTAG_RUNTEST	   = bytearray([0x85])
+CMD_JTAG_SDR		   = bytearray([0x86])
+CMD_JTAG_SDR_TDO	   = bytearray([0x87])
+CMD_JTAG_SIR		   = bytearray([0x88])
+CMD_JTAG_SIR_TDO	   = bytearray([0x89])
 
-CMD_IS_JTAG          = 0x80
+CMD_IS_JTAG            = bytearray([0x80])
 
-CMD_JTAG_TRST_ABSEN  = 0xF0
-CMD_JTAG_TRST_ON     = 0xF1
-CMD_JTAG_TRST_OFF	 = 0xF2
-CMD_JTAG_TRST_Z		 = 0xF3
-CMD_JTAG_TRST_FORCE  = 0xF4
+CMD_JTAG_TRST_ABSEN    = bytearray([0xF0])
+CMD_JTAG_TRST_ON       = bytearray([0xF1])
+CMD_JTAG_TRST_OFF	   = bytearray([0xF2])
+CMD_JTAG_TRST_Z		   = bytearray([0xF3])
+CMD_JTAG_TRST_FORCE    = bytearray([0xF4])
+
+CMD_JTAG_100MHZ        = bytearray([0x00])
