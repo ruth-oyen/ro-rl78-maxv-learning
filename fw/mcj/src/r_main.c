@@ -23,7 +23,7 @@
 * Device(s)    : R5F10268
 * Tool-Chain   : CCRL
 * Description  : This file implements main function.
-* Creation Date: 20/07/2026
+* Creation Date: 21/07/2026
 ***********************************************************************************************************************/
 
 /***********************************************************************************************************************
@@ -122,17 +122,6 @@ static const TAP_PATH __far tap_path[TAP_STATE_COUNT][TAP_STATE_COUNT] =
     {{ 6, 0}, { 2,10}, { 2, 0}, { 4, 8}, { 6,16}, { 6, 8}, { 8, 8}, {10, 8}, { 8,32}, { 4, 0}, { 6, 6}, { 8,22}, { 8, 6}, {10, 6}, {12, 6}, { 0, 0}}
 };
 
-static uint8_t tck_pattern[128] =
-{
-	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
-	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
-	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
-	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
-	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
-	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
-	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
-	0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02, 0x00, 0x02, 0x00, 0x02, 0x00, 0x02, 0x00,0x02,
-};
 
 struct
 {
@@ -215,8 +204,17 @@ static uint8_t get(void)
 		tx_ring_buf[tx_ring_write_pos]	= dat ; \
 		tx_ring_write_pos				= (tx_ring_write_pos + 1U) & 0x0FU; \
 		tx_ring_count++; \
+		if(tx_ring_done) \
+		{ \
+			tx_ring_done = 0; \
+			TXD0 = tx_ring_buf[tx_ring_read_pos]; \
+     		tx_ring_read_pos = (tx_ring_read_pos + 1U) & 0x0FU; \
+   			tx_ring_count--; \
+		} \
 		EI(); \
 	}while(0)
+
+#define SET_TAP_STATE_LED(state) (P1 = (uint8_t)((P1 & 0xF0U) | ((state) & 0x0FU)))
 
 static uint8_t move_jtag_state(uint8_t state_from, uint8_t state_to)
 {
@@ -231,13 +229,13 @@ static uint8_t move_jtag_state(uint8_t state_from, uint8_t state_to)
 		if(P2_bit.no1)
 		{
 			state_current = update_tap_state_machine(P2_bit.no0);
-			P1			  = state_current;
+			SET_TAP_STATE_LED(state_current);
 		}
 	}
 	return state_current;
 }
 
-static uint8_t shift_jtag_data(uint32_t length)
+static uint8_t shift_jtag_data(uint32_t bit_length)
 {
 	uint32_t byte_length;
 	uint8_t byte_length_left;
@@ -245,18 +243,20 @@ static uint8_t shift_jtag_data(uint32_t length)
 	uint8_t j8;
 	uint8_t dat;
 	uint8_t tdo;
+	_Bool	last_byte;
 
-	byte_length			= length >> 3;
-	byte_length_left	= length & 0b00000111;
+	byte_length			= bit_length >> 3;
+	byte_length_left	= bit_length & 0b00000111;
 	for(i32 = 0; i32 < byte_length; i32++)
 	{
 		dat = get();
 		tdo = 0U;
+		last_byte = (i32 == (byte_length - 1U)) && (byte_length_left == 0U);
 		for(j8 = 0; j8 < 8U; j8++)
 		{
 			TCK_OUT = L;
 			TDI_OUT = (dat >> j8) & 0b00000001;
-			TMS_OUT = ((i32 == (byte_length - 1U)) && (j8 == 7U) && (byte_length_left == 0U)) ? H : L;
+			TMS_OUT = last_byte && (j8 == 7U)  ? H : L;
 			TCK_OUT = H;
 			tdo |= (uint8_t)(TDO_IN << j8);
 		}
@@ -277,11 +277,11 @@ static uint8_t shift_jtag_data(uint32_t length)
 
 	/* The final scan bit is clocked with TMS=1, so TAP is now in EXIT1. */
 	state_current = update_tap_state_machine(H);
-	P1 = state_current;
+	SET_TAP_STATE_LED(state_current);
 	return state_current;
 }
 
-static uint8_t shift_jtag_data_tdo(uint32_t length)
+static uint8_t shift_jtag_data_tdo(uint32_t bit_length)
 {
 	uint32_t byte_length;
 	uint8_t byte_length_left;
@@ -290,8 +290,8 @@ static uint8_t shift_jtag_data_tdo(uint32_t length)
 	uint8_t dat;
 	uint8_t tdo;
 
-	byte_length			= length >> 3;
-	byte_length_left	= length & 0b00000111;
+	byte_length			= bit_length >> 3;
+	byte_length_left	= bit_length & 0b00000111;
 	for(i32 = 0; i32 < byte_length; i32++)
 	{
 		dat = get();
@@ -305,15 +305,7 @@ static uint8_t shift_jtag_data_tdo(uint32_t length)
 			tdo |= (uint8_t)(TDO_IN << j8);
 		}
 		SET_TXRING(tdo);
-		if(tx_ring_done)
-		{
-			DI();
-			tx_ring_done = 0;
-			TXD0 = tx_ring_buf[tx_ring_read_pos];
-     		tx_ring_read_pos = (tx_ring_read_pos + 1U) & 0x0FU;
-   			tx_ring_count--;
-			EI();
-		}
+
 	}
 	if(byte_length_left > 0U)
 	{
@@ -328,20 +320,11 @@ static uint8_t shift_jtag_data_tdo(uint32_t length)
 			tdo |= (uint8_t)(TDO_IN << j8);
 		}
 		SET_TXRING(tdo);
-		if(tx_ring_done)
-		{
-			DI();
-			tx_ring_done = 0;
-			TXD0 = tx_ring_buf[tx_ring_read_pos];
-     		tx_ring_read_pos = (tx_ring_read_pos + 1U) & 0x0FU;
-   			tx_ring_count--;
-			EI();
-		}
 	}
 
 	/* The final scan bit is clocked with TMS=1, so TAP is now in EXIT1. */
 	state_current = update_tap_state_machine(H);
-	P1 = state_current;
+	SET_TAP_STATE_LED(state_current);
 	return state_current;
 }
 
@@ -385,15 +368,6 @@ void main(void)
 				rx_crc8_calc = crc8_table[rx_crc8_calc ^ rxd.bytes.b3];
 
 				SET_TXRING(cmd);
-				if(tx_ring_done)
-				{
-					DI();
-					tx_ring_done = 0;
-					TXD0 = tx_ring_buf[tx_ring_read_pos];
-   		     		tx_ring_read_pos = (tx_ring_read_pos + 1U) & 0x0FU;
-        			tx_ring_count--;
-					EI();
-				}
 
 				if(rx_crc8 != rx_crc8_calc)
 				{
@@ -433,16 +407,6 @@ void main(void)
 				SET_TXRING(txd.bytes.b2);
 				SET_TXRING(txd.bytes.b3);
 				SET_TXRING(tx_crc8_calc);
-       
-				if(tx_ring_done)
-				{
-					DI();
-					tx_ring_done = 0;
-					TXD0 = tx_ring_buf[tx_ring_read_pos];
-   		     		tx_ring_read_pos = (tx_ring_read_pos + 1U) & 0x0FU;
-        			tx_ring_count--;
-					EI();
-				}
 			}
 			else
 			{//JTAG
@@ -462,7 +426,7 @@ void main(void)
 						{
 							for(i8 = 0; i8 < 10; ++i8) P2 = tms_pattern[i8]; // toggles TCK 5 times with TMS high
 							state_current		= STATE_TEST_LOGIC_RESET;
-							P1			 		= state_current;
+							SET_TAP_STATE_LED(state_current);
 							break;
 						}
 						else 								{reg.sts.u.bits.err_invalid_command     = 1; break;}
@@ -492,15 +456,6 @@ void main(void)
 							TCK_OUT = H;
 						}
 						SET_TXRING(CMD_JTAG_RUNTEST);
-						if(tx_ring_done)
-						{
-							DI();
-							tx_ring_done = 0;
-							TXD0 = tx_ring_buf[tx_ring_read_pos];
-     						tx_ring_read_pos = (tx_ring_read_pos + 1U) & 0x0FU;
-   							tx_ring_count--;
-							EI();
-						}
 						break;
 
 					case CMD_JTAG_SDR:	
